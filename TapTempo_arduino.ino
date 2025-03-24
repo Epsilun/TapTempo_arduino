@@ -7,6 +7,7 @@
 
 #define DEBOUNCE_US (30000)
 #define TIMEOUT_US (5000000)
+#define PULSE_WIDTH_US (50000)
 
 typedef enum {
   stateIDLE = 0,
@@ -33,10 +34,15 @@ uint32_t tempo_start_ticks;
  * Trig beat : trigger setting or Midi at detected tempo 
  */
 bool TempoTask(void) {
-  ledState = !ledState;
+  ledState = HIGH;
   digitalWrite(ledPin, ledState);
   // Serial.println("tempo");
   return true;
+}
+
+void TempoEndTask(void){
+  ledState = LOW;
+  digitalWrite(ledPin, ledState);
 }
 
 void setup() {
@@ -127,11 +133,17 @@ void loop()
   /******* Tempo Task scheduler ***********/
   /****************************************/
   if( ((tap_idx>0) || (state==stateIDLE)) 
-      && tempo
-      && ((micros() - tempo_start_ticks) >= tempo ))
+      && tempo )
   {
-      tempo_start_ticks += tempo;
-      TempoTask();
+      if((micros() - tempo_start_ticks) >= tempo )
+      {
+          tempo_start_ticks += tempo;
+          TempoTask();
+      }
+      else if((micros() - tempo_start_ticks) >= PULSE_WIDTH_US)
+      {
+          TempoEndTask();
+      }
   }
 
   /*************************************/
